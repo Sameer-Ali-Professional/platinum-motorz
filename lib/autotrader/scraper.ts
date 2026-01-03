@@ -34,16 +34,25 @@ export class AutotraderScraper {
       // Check if we're in a serverless environment (Vercel)
       const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
 
+      console.log(`Initializing browser in ${isServerless ? "serverless" : "local"} environment...`)
+
       if (isServerless) {
         // Use serverless-compatible Chromium
         chromium.setGraphicsMode(false) // Disable GPU for serverless
+        chromium.setHeadlessMode(true)
+        
+        const executablePath = await chromium.executablePath()
+        console.log(`Using Chromium executable: ${executablePath ? "found" : "not found"}`)
+        
         this.browser = await puppeteer.launch({
           args: chromium.args,
           defaultViewport: chromium.defaultViewport,
-          executablePath: await chromium.executablePath(),
+          executablePath: executablePath,
           headless: chromium.headless,
           ignoreHTTPSErrors: true,
         })
+        
+        console.log("Browser launched successfully in serverless mode")
       } else {
         // Use regular Chromium for local/dev
         // Try to use system Chrome/Chromium
@@ -52,10 +61,17 @@ export class AutotraderScraper {
           args: ["--no-sandbox", "--disable-setuid-sandbox"],
           executablePath: process.env.CHROME_PATH || undefined,
         })
+        
+        console.log("Browser launched successfully in local mode")
       }
     } catch (error) {
+      const errorDetails = error instanceof Error ? error.message : "Unknown error"
+      const errorStack = error instanceof Error ? error.stack : undefined
+      console.error("Browser initialization error:", errorDetails)
+      console.error("Error stack:", errorStack)
+      
       throw new Error(
-        `Failed to launch browser: ${error instanceof Error ? error.message : "Unknown error"}. Puppeteer may not be installed or available in this environment.`
+        `Failed to launch browser: ${errorDetails}. Puppeteer may not be installed or available in this environment.`
       )
     }
   }

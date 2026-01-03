@@ -148,22 +148,27 @@ export async function POST() {
     }
     
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    const errorStack = error instanceof Error ? error.stack : undefined
     console.error("Autotrader sync error:", error)
+    console.error("Error stack:", errorStack)
     
     // Provide more specific error messages
     let userMessage = "Failed to sync Autotrader feed"
-    if (errorMessage.includes("playwright") || errorMessage.includes("chromium")) {
-      userMessage = "Playwright browser not available. This feature requires a server environment with Playwright installed."
-    } else if (errorMessage.includes("timeout")) {
-      userMessage = "Request timed out. The Autotrader page may be slow to load."
+    if (errorMessage.includes("puppeteer") || errorMessage.includes("chromium") || errorMessage.includes("browser")) {
+      userMessage = "Browser not available. Puppeteer may not be properly configured for serverless environment."
+    } else if (errorMessage.includes("timeout") || errorMessage.includes("TIMEOUT")) {
+      userMessage = "Request timed out. The sync process may take longer than the serverless function timeout. Consider using a background job or increasing function timeout."
     } else if (errorMessage.includes("ENOENT") || errorMessage.includes("not found")) {
-      userMessage = "Browser dependencies not found. Please ensure Playwright is properly installed."
+      userMessage = "Browser dependencies not found. Please ensure Puppeteer and Chromium are properly installed."
+    } else if (errorMessage.includes("ECONNREFUSED") || errorMessage.includes("network")) {
+      userMessage = "Network error. Unable to connect to Autotrader. Please try again later."
     }
     
     return NextResponse.json(
       {
         error: userMessage,
-        details: process.env.NODE_ENV === "development" ? errorMessage : undefined,
+        details: process.env.NODE_ENV === "development" ? errorMessage : errorMessage.substring(0, 200), // Show first 200 chars in production
+        stack: process.env.NODE_ENV === "development" ? errorStack : undefined,
       },
       { status: 500 }
     )
