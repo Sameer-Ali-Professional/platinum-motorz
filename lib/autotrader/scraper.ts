@@ -41,8 +41,39 @@ export class AutotraderScraper {
         const executablePath = await chromium.executablePath()
         console.log(`Using Chromium executable: ${executablePath ? "found" : "not found"}`)
         
+        // Add additional args to handle missing system libraries
+        const chromiumArgs = [
+          ...chromium.args,
+          "--disable-gpu",
+          "--disable-dev-shm-usage",
+          "--disable-setuid-sandbox",
+          "--no-first-run",
+          "--no-sandbox",
+          "--no-zygote",
+          "--single-process", // Required for serverless
+          "--disable-extensions",
+          "--disable-background-networking",
+          "--disable-background-timer-throttling",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-breakpad",
+          "--disable-client-side-phishing-detection",
+          "--disable-default-apps",
+          "--disable-features=TranslateUI",
+          "--disable-hang-monitor",
+          "--disable-popup-blocking",
+          "--disable-prompt-on-repost",
+          "--disable-sync",
+          "--disable-translate",
+          "--metrics-recording-only",
+          "--no-default-browser-check",
+          "--safebrowsing-disable-auto-update",
+          "--enable-automation",
+          "--password-store=basic",
+          "--use-mock-keychain",
+        ]
+        
         this.browser = await puppeteer.launch({
-          args: chromium.args,
+          args: chromiumArgs,
           defaultViewport: chromium.defaultViewport,
           executablePath: executablePath,
           headless: chromium.headless,
