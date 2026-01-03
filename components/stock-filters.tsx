@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useMemo } from "react"
+import { Combobox } from "@/components/ui/combobox"
+import { CAR_BRANDS, CAR_MODELS, FUEL_TYPES, TRANSMISSIONS, BODY_TYPES } from "@/lib/car-data"
 
 interface Car {
   make: string
@@ -38,44 +39,146 @@ export function StockFilters({ onFilterChange, cars = [] }: StockFiltersProps) {
     year: "all",
   })
 
-  // Get unique values from cars data
-  const uniqueMakes = useMemo(() => {
-    const makes = new Set(cars.map((car) => car.make).filter(Boolean))
-    return Array.from(makes).sort()
-  }, [cars])
+  // Make options - use comprehensive list
+  const makeOptions = useMemo(() => {
+    const options = [{ value: "all", label: "All Makes" }]
+    // Add all brands from comprehensive list
+    CAR_BRANDS.forEach((brand) => {
+      options.push({ value: brand, label: brand })
+    })
+    return options
+  }, [])
 
-  const uniqueModels = useMemo(() => {
+  // Model options - filtered by selected make
+  const modelOptions = useMemo(() => {
+    const options = [{ value: "all", label: "All Models" }]
+    
     if (filters.make === "all") {
-      const models = new Set(cars.map((car) => car.model).filter(Boolean))
-      return Array.from(models).sort()
+      // Show all models from all brands
+      const allModels = new Set<string>()
+      Object.values(CAR_MODELS).forEach((models) => {
+        models.forEach((model) => allModels.add(model))
+      })
+      Array.from(allModels)
+        .sort()
+        .forEach((model) => {
+          options.push({ value: model, label: model })
+        })
     } else {
-      const models = new Set(
-        cars.filter((car) => car.make.toLowerCase() === filters.make.toLowerCase()).map((car) => car.model).filter(Boolean)
+      // Show models for selected make
+      const makeModels = CAR_MODELS[filters.make] || []
+      makeModels.forEach((model) => {
+        options.push({ value: model, label: model })
+      })
+      
+      // Also include models from actual car data for this make (case-insensitive)
+      const actualModels = new Set(
+        cars
+          .filter((car) => car.make.toLowerCase() === filters.make.toLowerCase())
+          .map((car) => car.model)
+          .filter(Boolean)
       )
-      return Array.from(models).sort()
+      actualModels.forEach((model) => {
+        if (!makeModels.includes(model)) {
+          options.push({ value: model, label: model })
+        }
+      })
     }
-  }, [cars, filters.make])
+    
+    return options
+  }, [filters.make, cars])
 
-  const uniqueFuelTypes = useMemo(() => {
-    const fuelTypes = new Set(cars.map((car) => car.fuel_type).filter(Boolean))
-    return Array.from(fuelTypes).sort()
+  // Fuel type options
+  const fuelTypeOptions = useMemo(() => {
+    const options = [{ value: "all", label: "All Fuel Types" }]
+    FUEL_TYPES.forEach((fuelType) => {
+      options.push({ value: fuelType, label: fuelType })
+    })
+    // Also add any unique fuel types from actual car data
+    const actualFuelTypes = new Set(cars.map((car) => car.fuel_type).filter(Boolean))
+    actualFuelTypes.forEach((fuelType) => {
+      if (!FUEL_TYPES.includes(fuelType as any)) {
+        options.push({ value: fuelType!, label: fuelType! })
+      }
+    })
+    return options.sort((a, b) => a.label.localeCompare(b.label))
   }, [cars])
 
-  const uniqueTransmissions = useMemo(() => {
-    const transmissions = new Set(cars.map((car) => car.transmission).filter(Boolean))
-    return Array.from(transmissions).sort()
+  // Transmission options
+  const transmissionOptions = useMemo(() => {
+    const options = [{ value: "all", label: "All Transmissions" }]
+    TRANSMISSIONS.forEach((transmission) => {
+      options.push({ value: transmission, label: transmission })
+    })
+    // Also add any unique transmissions from actual car data
+    const actualTransmissions = new Set(cars.map((car) => car.transmission).filter(Boolean))
+    actualTransmissions.forEach((transmission) => {
+      if (!TRANSMISSIONS.includes(transmission as any)) {
+        options.push({ value: transmission!, label: transmission! })
+      }
+    })
+    return options.sort((a, b) => a.label.localeCompare(b.label))
   }, [cars])
 
-  const uniqueBodyTypes = useMemo(() => {
-    const bodyTypes = new Set(cars.map((car) => car.body_type).filter(Boolean))
-    return Array.from(bodyTypes).sort()
+  // Body type options
+  const bodyTypeOptions = useMemo(() => {
+    const options = [{ value: "all", label: "All Body Types" }]
+    BODY_TYPES.forEach((bodyType) => {
+      options.push({ value: bodyType, label: bodyType })
+    })
+    // Also add any unique body types from actual car data
+    const actualBodyTypes = new Set(cars.map((car) => car.body_type).filter(Boolean))
+    actualBodyTypes.forEach((bodyType) => {
+      if (!BODY_TYPES.includes(bodyType as any)) {
+        options.push({ value: bodyType!, label: bodyType! })
+      }
+    })
+    return options.sort((a, b) => a.label.localeCompare(b.label))
   }, [cars])
 
-  const yearRange = useMemo(() => {
-    if (cars.length === 0) return { min: new Date().getFullYear(), max: new Date().getFullYear() }
-    const years = cars.map((car) => car.year)
-    return { min: Math.min(...years), max: Math.max(...years) }
-  }, [cars])
+  // Year options
+  const yearOptions = useMemo(() => {
+    const options = [{ value: "all", label: "All Years" }]
+    const currentYear = new Date().getFullYear()
+    
+    // Generate year ranges from 2025 down to 2000
+    for (let year = currentYear; year >= 2000; year -= 5) {
+      const rangeStart = Math.max(year - 4, 2000)
+      const rangeEnd = Math.min(year, currentYear)
+      if (rangeStart <= rangeEnd) {
+        options.push({
+          value: `${rangeStart}-${rangeEnd}`,
+          label: `${rangeStart} - ${rangeEnd}`,
+        })
+      }
+    }
+    
+    return options
+  }, [])
+
+  // Price range options
+  const priceRangeOptions = [
+    { value: "all", label: "All Prices" },
+    { value: "0-25000", label: "Under £25,000" },
+    { value: "25000-50000", label: "£25,000 - £50,000" },
+    { value: "50000-75000", label: "£50,000 - £75,000" },
+    { value: "75000-100000", label: "£75,000 - £100,000" },
+    { value: "100000-150000", label: "£100,000 - £150,000" },
+    { value: "150000-200000", label: "£150,000 - £200,000" },
+    { value: "200000+", label: "£200,000+" },
+  ]
+
+  // Mileage options
+  const mileageOptions = [
+    { value: "all", label: "All Mileage" },
+    { value: "0-10000", label: "Under 10,000 miles" },
+    { value: "10000-30000", label: "10,000 - 30,000 miles" },
+    { value: "30000-50000", label: "30,000 - 50,000 miles" },
+    { value: "50000-75000", label: "50,000 - 75,000 miles" },
+    { value: "75000-100000", label: "75,000 - 100,000 miles" },
+    { value: "100000-150000", label: "100,000 - 150,000 miles" },
+    { value: "150000+", label: "150,000+ miles" },
+  ]
 
   const handleFilterChange = (key: string, value: string) => {
     const newFilters = { ...filters, [key]: value }
@@ -87,28 +190,6 @@ export function StockFilters({ onFilterChange, cars = [] }: StockFiltersProps) {
     onFilterChange(newFilters)
   }
 
-  // Generate year options
-  const yearOptions = useMemo(() => {
-    const options = []
-    const currentYear = new Date().getFullYear()
-    const startYear = Math.max(yearRange.min, currentYear - 10)
-    const endYear = Math.min(yearRange.max, currentYear + 1)
-
-    // Add decade ranges
-    for (let year = endYear; year >= startYear; year -= 5) {
-      const rangeStart = Math.max(year - 4, startYear)
-      const rangeEnd = Math.min(year, endYear)
-      if (rangeStart <= rangeEnd) {
-        options.push({ value: `${rangeStart}-${rangeEnd}`, label: `${rangeStart} - ${rangeEnd}` })
-      }
-    }
-
-    // Add "All Years" at the top
-    options.unshift({ value: "all", label: "All Years" })
-
-    return options
-  }, [yearRange])
-
   return (
     <div className="bg-card border border-border rounded-lg p-6 mb-12">
       <h2 className="text-xl font-semibold text-foreground mb-6">Filter Vehicles</h2>
@@ -116,146 +197,105 @@ export function StockFilters({ onFilterChange, cars = [] }: StockFiltersProps) {
         {/* Make Filter */}
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-2">Make</label>
-          <Select value={filters.make} onValueChange={(value) => handleFilterChange("make", value)}>
-            <SelectTrigger className="w-full bg-background border-border text-foreground hover:border-primary transition-colors">
-              <SelectValue placeholder="All Makes" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="all">All Makes</SelectItem>
-              {uniqueMakes.map((make) => (
-                <SelectItem key={make} value={make}>
-                  {make}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={makeOptions}
+            value={filters.make}
+            onValueChange={(value) => handleFilterChange("make", value)}
+            placeholder="All Makes"
+            searchPlaceholder="Search makes..."
+            emptyMessage="No makes found."
+          />
         </div>
 
         {/* Model Filter */}
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-2">Model</label>
-          <Select value={filters.model} onValueChange={(value) => handleFilterChange("model", value)}>
-            <SelectTrigger className="w-full bg-background border-border text-foreground hover:border-primary transition-colors">
-              <SelectValue placeholder="All Models" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="all">All Models</SelectItem>
-              {uniqueModels.map((model) => (
-                <SelectItem key={model} value={model}>
-                  {model}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={modelOptions}
+            value={filters.model}
+            onValueChange={(value) => handleFilterChange("model", value)}
+            placeholder="All Models"
+            searchPlaceholder="Search models..."
+            emptyMessage="No models found."
+          />
         </div>
 
         {/* Fuel Type Filter */}
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-2">Fuel Type</label>
-          <Select value={filters.fuelType} onValueChange={(value) => handleFilterChange("fuelType", value)}>
-            <SelectTrigger className="w-full bg-background border-border text-foreground hover:border-primary transition-colors">
-              <SelectValue placeholder="All Fuel Types" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="all">All Fuel Types</SelectItem>
-              {uniqueFuelTypes.map((fuelType) => (
-                <SelectItem key={fuelType} value={fuelType || ""}>
-                  {fuelType}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={fuelTypeOptions}
+            value={filters.fuelType}
+            onValueChange={(value) => handleFilterChange("fuelType", value)}
+            placeholder="All Fuel Types"
+            searchPlaceholder="Search fuel types..."
+            emptyMessage="No fuel types found."
+          />
         </div>
 
         {/* Transmission Filter */}
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-2">Transmission</label>
-          <Select value={filters.transmission} onValueChange={(value) => handleFilterChange("transmission", value)}>
-            <SelectTrigger className="w-full bg-background border-border text-foreground hover:border-primary transition-colors">
-              <SelectValue placeholder="All Transmissions" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="all">All Transmissions</SelectItem>
-              {uniqueTransmissions.map((transmission) => (
-                <SelectItem key={transmission} value={transmission || ""}>
-                  {transmission}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={transmissionOptions}
+            value={filters.transmission}
+            onValueChange={(value) => handleFilterChange("transmission", value)}
+            placeholder="All Transmissions"
+            searchPlaceholder="Search transmissions..."
+            emptyMessage="No transmissions found."
+          />
         </div>
 
         {/* Body Type Filter */}
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-2">Body Type</label>
-          <Select value={filters.bodyType} onValueChange={(value) => handleFilterChange("bodyType", value)}>
-            <SelectTrigger className="w-full bg-background border-border text-foreground hover:border-primary transition-colors">
-              <SelectValue placeholder="All Body Types" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="all">All Body Types</SelectItem>
-              {uniqueBodyTypes.map((bodyType) => (
-                <SelectItem key={bodyType} value={bodyType || ""}>
-                  {bodyType}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={bodyTypeOptions}
+            value={filters.bodyType}
+            onValueChange={(value) => handleFilterChange("bodyType", value)}
+            placeholder="All Body Types"
+            searchPlaceholder="Search body types..."
+            emptyMessage="No body types found."
+          />
         </div>
 
         {/* Year Filter */}
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-2">Year</label>
-          <Select value={filters.year} onValueChange={(value) => handleFilterChange("year", value)}>
-            <SelectTrigger className="w-full bg-background border-border text-foreground hover:border-primary transition-colors">
-              <SelectValue placeholder="All Years" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              {yearOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={yearOptions}
+            value={filters.year}
+            onValueChange={(value) => handleFilterChange("year", value)}
+            placeholder="All Years"
+            searchPlaceholder="Search years..."
+            emptyMessage="No years found."
+          />
         </div>
 
         {/* Price Range Filter */}
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-2">Price Range</label>
-          <Select value={filters.priceRange} onValueChange={(value) => handleFilterChange("priceRange", value)}>
-            <SelectTrigger className="w-full bg-background border-border text-foreground hover:border-primary transition-colors">
-              <SelectValue placeholder="All Prices" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="all">All Prices</SelectItem>
-              <SelectItem value="0-25000">Under £25,000</SelectItem>
-              <SelectItem value="25000-50000">£25,000 - £50,000</SelectItem>
-              <SelectItem value="50000-75000">£50,000 - £75,000</SelectItem>
-              <SelectItem value="75000-100000">£75,000 - £100,000</SelectItem>
-              <SelectItem value="100000-150000">£100,000 - £150,000</SelectItem>
-              <SelectItem value="150000+">£150,000+</SelectItem>
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={priceRangeOptions}
+            value={filters.priceRange}
+            onValueChange={(value) => handleFilterChange("priceRange", value)}
+            placeholder="All Prices"
+            searchPlaceholder="Search price ranges..."
+            emptyMessage="No price ranges found."
+          />
         </div>
 
         {/* Mileage Filter */}
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-2">Mileage</label>
-          <Select value={filters.mileage} onValueChange={(value) => handleFilterChange("mileage", value)}>
-            <SelectTrigger className="w-full bg-background border-border text-foreground hover:border-primary transition-colors">
-              <SelectValue placeholder="All Mileage" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="all">All Mileage</SelectItem>
-              <SelectItem value="0-10000">Under 10,000 miles</SelectItem>
-              <SelectItem value="10000-30000">10,000 - 30,000 miles</SelectItem>
-              <SelectItem value="30000-50000">30,000 - 50,000 miles</SelectItem>
-              <SelectItem value="50000-75000">50,000 - 75,000 miles</SelectItem>
-              <SelectItem value="75000-100000">75,000 - 100,000 miles</SelectItem>
-              <SelectItem value="100000+">100,000+ miles</SelectItem>
-            </SelectContent>
-          </Select>
+          <Combobox
+            options={mileageOptions}
+            value={filters.mileage}
+            onValueChange={(value) => handleFilterChange("mileage", value)}
+            placeholder="All Mileage"
+            searchPlaceholder="Search mileage ranges..."
+            emptyMessage="No mileage ranges found."
+          />
         </div>
       </div>
     </div>
