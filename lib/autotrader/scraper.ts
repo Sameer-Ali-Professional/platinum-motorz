@@ -38,9 +38,6 @@ export class AutotraderScraper {
 
       if (isServerless) {
         // Use serverless-compatible Chromium
-        chromium.setGraphicsMode(false) // Disable GPU for serverless
-        chromium.setHeadlessMode(true)
-        
         const executablePath = await chromium.executablePath()
         console.log(`Using Chromium executable: ${executablePath ? "found" : "not found"}`)
         
