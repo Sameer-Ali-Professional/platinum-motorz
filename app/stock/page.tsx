@@ -14,6 +14,8 @@ interface Car {
   price: number
   images: string[] | null
   fuel_type: string | null
+  transmission: string | null
+  body_type: string | null
 }
 
 export default function StockPage() {
@@ -23,8 +25,13 @@ export default function StockPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentFilters, setCurrentFilters] = useState({
     make: "all",
+    model: "all",
     priceRange: "all",
     mileage: "all",
+    fuelType: "all",
+    transmission: "all",
+    bodyType: "all",
+    year: "all",
   })
 
   useEffect(() => {
@@ -50,13 +57,32 @@ export default function StockPage() {
     return () => clearInterval(interval)
   }, [])
 
-  const applyFilters = (cars: Car[], filters: { make: string; priceRange: string; mileage: string }) => {
+  const applyFilters = (
+    cars: Car[],
+    filters: {
+      make: string
+      model: string
+      priceRange: string
+      mileage: string
+      fuelType: string
+      transmission: string
+      bodyType: string
+      year: string
+    }
+  ) => {
     let filtered = cars
 
+    // Make filter - case-insensitive matching
     if (filters.make !== "all") {
-      filtered = filtered.filter((car) => car.make === filters.make)
+      filtered = filtered.filter((car) => car.make.toLowerCase() === filters.make.toLowerCase())
     }
 
+    // Model filter - case-insensitive matching
+    if (filters.model !== "all") {
+      filtered = filtered.filter((car) => car.model.toLowerCase() === filters.model.toLowerCase())
+    }
+
+    // Price range filter
     if (filters.priceRange !== "all") {
       const [min, max] = filters.priceRange.split("-")
       const minPrice = Number.parseInt(min)
@@ -65,6 +91,7 @@ export default function StockPage() {
       filtered = filtered.filter((car) => car.price >= minPrice && car.price <= maxPrice)
     }
 
+    // Mileage filter
     if (filters.mileage !== "all") {
       const [min, max] = filters.mileage.split("-")
       const minMileage = Number.parseInt(min)
@@ -73,11 +100,50 @@ export default function StockPage() {
       filtered = filtered.filter((car) => car.mileage >= minMileage && car.mileage <= maxMileage)
     }
 
+    // Fuel type filter
+    if (filters.fuelType !== "all") {
+      filtered = filtered.filter(
+        (car) => car.fuel_type && car.fuel_type.toLowerCase() === filters.fuelType.toLowerCase()
+      )
+    }
+
+    // Transmission filter
+    if (filters.transmission !== "all") {
+      filtered = filtered.filter(
+        (car) => car.transmission && car.transmission.toLowerCase() === filters.transmission.toLowerCase()
+      )
+    }
+
+    // Body type filter
+    if (filters.bodyType !== "all") {
+      filtered = filtered.filter(
+        (car) => car.body_type && car.body_type.toLowerCase() === filters.bodyType.toLowerCase()
+      )
+    }
+
+    // Year filter
+    if (filters.year !== "all") {
+      const [min, max] = filters.year.split("-")
+      const minYear = Number.parseInt(min)
+      const maxYear = max.includes("+") ? Number.POSITIVE_INFINITY : Number.parseInt(max)
+
+      filtered = filtered.filter((car) => car.year >= minYear && car.year <= maxYear)
+    }
+
     setFilteredCars(filtered)
     setDisplayedCars(6)
   }
 
-  const handleFilterChange = (filters: { make: string; priceRange: string; mileage: string }) => {
+  const handleFilterChange = (filters: {
+    make: string
+    model: string
+    priceRange: string
+    mileage: string
+    fuelType: string
+    transmission: string
+    bodyType: string
+    year: string
+  }) => {
     setCurrentFilters(filters)
     applyFilters(allCars, filters)
   }
@@ -128,7 +194,7 @@ export default function StockPage() {
           </p>
         </div>
 
-        <StockFilters onFilterChange={handleFilterChange} />
+        <StockFilters onFilterChange={handleFilterChange} cars={allCars} />
 
         <div className="mb-6">
           <p className="text-muted-foreground">
@@ -183,8 +249,13 @@ export default function StockPage() {
               onClick={() =>
                 handleFilterChange({
                   make: "all",
+                  model: "all",
                   priceRange: "all",
                   mileage: "all",
+                  fuelType: "all",
+                  transmission: "all",
+                  bodyType: "all",
+                  year: "all",
                 })
               }
               className="bg-primary text-primary-foreground hover:bg-accent"
