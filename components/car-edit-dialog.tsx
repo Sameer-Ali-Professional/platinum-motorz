@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,7 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Combobox } from "@/components/ui/combobox"
 import { createClient } from "@/lib/supabase/client"
+import { CAR_BRANDS, CAR_MODELS, FUEL_TYPES, TRANSMISSIONS, BODY_TYPES } from "@/lib/car-data"
 import { X, Upload, ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react"
 import Image from "next/image"
 
@@ -68,6 +70,44 @@ export function CarEditDialog({ car, open, onOpenChange, onSave }: CarEditDialog
   const [newFeature, setNewFeature] = useState("")
   const [isUploading, setIsUploading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Make options
+  const makeOptions = useMemo(() => {
+    return CAR_BRANDS.map((brand) => ({ value: brand, label: brand }))
+  }, [])
+
+  // Model options - filtered by selected make
+  const modelOptions = useMemo(() => {
+    if (!formData.make) {
+      // Show all models from all brands
+      const allModels = new Set<string>()
+      Object.values(CAR_MODELS).forEach((models) => {
+        models.forEach((model) => allModels.add(model))
+      })
+      return Array.from(allModels)
+        .sort()
+        .map((model) => ({ value: model, label: model }))
+    } else {
+      // Show models for selected make
+      const makeModels = CAR_MODELS[formData.make] || []
+      return makeModels.map((model) => ({ value: model, label: model }))
+    }
+  }, [formData.make])
+
+  // Fuel type options
+  const fuelTypeOptions = useMemo(() => {
+    return FUEL_TYPES.map((fuelType) => ({ value: fuelType, label: fuelType }))
+  }, [])
+
+  // Transmission options
+  const transmissionOptions = useMemo(() => {
+    return TRANSMISSIONS.map((transmission) => ({ value: transmission, label: transmission }))
+  }, [])
+
+  // Body type options
+  const bodyTypeOptions = useMemo(() => {
+    return BODY_TYPES.map((bodyType) => ({ value: bodyType, label: bodyType }))
+  }, [])
 
   useEffect(() => {
     if (car) {
@@ -239,21 +279,29 @@ export function CarEditDialog({ car, open, onOpenChange, onSave }: CarEditDialog
           {/* Basic Info */}
           <div className="space-y-2">
             <Label htmlFor="make">Make *</Label>
-            <Input
-              id="make"
+            <Combobox
+              options={makeOptions}
               value={formData.make}
-              onChange={(e) => setFormData({ ...formData, make: e.target.value })}
-              className="bg-black/40 border-gray-700 text-white"
+              onValueChange={(value) => {
+                setFormData({ ...formData, make: value, model: "" }) // Reset model when make changes
+              }}
+              placeholder="Select make..."
+              searchPlaceholder="Search makes..."
+              emptyMessage="No makes found."
+              className="bg-black/40 border-gray-700 text-white hover:border-[#D4AF37]"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="model">Model *</Label>
-            <Input
-              id="model"
+            <Combobox
+              options={modelOptions}
               value={formData.model}
-              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-              className="bg-black/40 border-gray-700 text-white"
+              onValueChange={(value) => setFormData({ ...formData, model: value })}
+              placeholder="Select model..."
+              searchPlaceholder="Search models..."
+              emptyMessage="No models found."
+              className="bg-black/40 border-gray-700 text-white hover:border-[#D4AF37]"
             />
           </div>
 
@@ -292,34 +340,40 @@ export function CarEditDialog({ car, open, onOpenChange, onSave }: CarEditDialog
 
           <div className="space-y-2">
             <Label htmlFor="fuel_type">Fuel Type</Label>
-            <Input
-              id="fuel_type"
+            <Combobox
+              options={fuelTypeOptions}
               value={formData.fuel_type || ""}
-              onChange={(e) => setFormData({ ...formData, fuel_type: e.target.value || null })}
-              className="bg-black/40 border-gray-700 text-white"
-              placeholder="e.g., Petrol, Diesel, Hybrid"
+              onValueChange={(value) => setFormData({ ...formData, fuel_type: value || null })}
+              placeholder="Select fuel type..."
+              searchPlaceholder="Search fuel types..."
+              emptyMessage="No fuel types found."
+              className="bg-black/40 border-gray-700 text-white hover:border-[#D4AF37]"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="transmission">Transmission</Label>
-            <Input
-              id="transmission"
+            <Combobox
+              options={transmissionOptions}
               value={formData.transmission || ""}
-              onChange={(e) => setFormData({ ...formData, transmission: e.target.value || null })}
-              className="bg-black/40 border-gray-700 text-white"
-              placeholder="e.g., Automatic, Manual"
+              onValueChange={(value) => setFormData({ ...formData, transmission: value || null })}
+              placeholder="Select transmission..."
+              searchPlaceholder="Search transmissions..."
+              emptyMessage="No transmissions found."
+              className="bg-black/40 border-gray-700 text-white hover:border-[#D4AF37]"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="body_type">Body Type</Label>
-            <Input
-              id="body_type"
+            <Combobox
+              options={bodyTypeOptions}
               value={formData.body_type || ""}
-              onChange={(e) => setFormData({ ...formData, body_type: e.target.value || null })}
-              className="bg-black/40 border-gray-700 text-white"
-              placeholder="e.g., Saloon, SUV, Hatchback"
+              onValueChange={(value) => setFormData({ ...formData, body_type: value || null })}
+              placeholder="Select body type..."
+              searchPlaceholder="Search body types..."
+              emptyMessage="No body types found."
+              className="bg-black/40 border-gray-700 text-white hover:border-[#D4AF37]"
             />
           </div>
 
