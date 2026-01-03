@@ -4,6 +4,7 @@ import { ReviewsDisplay } from "@/components/reviews-display"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { redirect } from "next/navigation"
 
 export const metadata: Metadata = {
   title: "Platinum Motorz - Premium Luxury Car Dealership in Oldham",
@@ -17,7 +18,16 @@ export const metadata: Metadata = {
   },
 }
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: { code?: string; next?: string }
+}) {
+  // Handle OAuth callback if code is present (fallback for Supabase redirects to root)
+  if (searchParams.code) {
+    redirect(`/auth/callback?code=${searchParams.code}&next=${searchParams.next || "/admin"}`)
+  }
+
   return (
     <main className="min-h-screen">
       <HeroSection />
