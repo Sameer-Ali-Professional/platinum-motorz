@@ -29,9 +29,22 @@ export default async function Home({
   }
 
   return (
-    <main className="min-h-screen">
-      <HeroSection />
-      <FeaturesSection />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "Platinum Motorz",
+            url: "https://www.platinummotorz.co.uk",
+            logo: "https://www.platinummotorz.co.uk/logo.png",
+          }),
+        }}
+      />
+      <main className="min-h-screen">
+        <HeroSection />
+        <FeaturesSection />
 
       <section className="py-20 bg-black">
         <div className="container mx-auto px-4">
@@ -49,6 +62,7 @@ export default async function Home({
           </div>
         </div>
       </section>
-    </main>
+      </main>
+    </>
   )
 }
