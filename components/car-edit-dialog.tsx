@@ -176,6 +176,16 @@ export function CarEditDialog({ car, open, onOpenChange, onSave }: CarEditDialog
     const supabase = createClient()
 
     try {
+      // Check authentication first
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser()
+
+      if (authError || !user) {
+        throw new Error("You must be logged in to save cars. Please refresh and try again.")
+      }
+
       const carData = {
         ...formData,
         images: images.length > 0 ? images : null,
@@ -188,19 +198,26 @@ export function CarEditDialog({ car, open, onOpenChange, onSave }: CarEditDialog
 
       if (car?.id) {
         // Update existing car
-        const { error } = await supabase.from("cars").update(carData).eq("id", car.id)
-        if (error) throw error
+        const { data, error } = await supabase.from("cars").update(carData).eq("id", car.id).select()
+        if (error) {
+          console.error("Supabase error:", error)
+          throw new Error(error.message || "Failed to update car")
+        }
       } else {
         // Create new car
-        const { error } = await supabase.from("cars").insert(carData)
-        if (error) throw error
+        const { data, error } = await supabase.from("cars").insert(carData).select()
+        if (error) {
+          console.error("Supabase error:", error)
+          throw new Error(error.message || "Failed to create car")
+        }
       }
 
       onSave()
       onOpenChange(false)
     } catch (error) {
       console.error("Error saving car:", error)
-      alert("Failed to save car. Please try again.")
+      const errorMessage = error instanceof Error ? error.message : "Failed to save car. Please try again."
+      alert(errorMessage)
     } finally {
       setIsSaving(false)
     }

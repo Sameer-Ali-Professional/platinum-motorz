@@ -24,15 +24,24 @@ interface CarDetails {
   images: string[] | null
 }
 
-export default function CarDetailsPage({ params }: { params: { id: string } }) {
+export default function CarDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const [car, setCar] = useState<CarDetails | null>(null)
   const [isTestDriveOpen, setIsTestDriveOpen] = useState(false)
   const [isEnquiryOpen, setIsEnquiryOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [carId, setCarId] = useState<string | null>(null)
 
   useEffect(() => {
+    params.then((p) => {
+      setCarId(p.id)
+    })
+  }, [params])
+
+  useEffect(() => {
+    if (!carId) return
+
     setIsLoading(true)
-    fetch(`/api/cars/${params.id}`)
+    fetch(`/api/cars/${carId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Car not found")
         return res.json()
@@ -45,7 +54,7 @@ export default function CarDetailsPage({ params }: { params: { id: string } }) {
         console.error("Error fetching car data:", error)
         setIsLoading(false)
       })
-  }, [params.id])
+  }, [carId])
 
   if (isLoading) {
     return (

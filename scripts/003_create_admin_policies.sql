@@ -2,27 +2,27 @@
 -- Note: In production, you should have a proper admin user management system
 -- For now, we'll allow authenticated users to manage reviews and cars
 
--- Admin can update and delete reviews
+-- Admin can update and delete reviews (authenticated users only)
 CREATE POLICY "reviews_update_admin"
   ON public.reviews FOR UPDATE
-  USING (true);
+  USING (auth.role() = 'authenticated');
 
 CREATE POLICY "reviews_delete_admin"
   ON public.reviews FOR DELETE
-  USING (true);
+  USING (auth.role() = 'authenticated');
 
--- Admin can manage cars (insert, update, delete)
+-- Admin can manage cars (insert, update, delete) - authenticated users only
 CREATE POLICY "cars_insert_admin"
   ON public.cars FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (auth.role() = 'authenticated');
 
 CREATE POLICY "cars_update_admin"
   ON public.cars FOR UPDATE
-  USING (true);
+  USING (auth.role() = 'authenticated');
 
 CREATE POLICY "cars_delete_admin"
   ON public.cars FOR DELETE
-  USING (true);
+  USING (auth.role() = 'authenticated');
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
