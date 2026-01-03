@@ -40,6 +40,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Allow auth callback route to proceed (it handles its own redirects)
+  if (request.nextUrl.pathname.startsWith("/auth/callback")) {
+    return supabaseResponse
+  }
+
   // Redirect to login if accessing admin routes without authentication
   if (request.nextUrl.pathname.startsWith("/admin") && !user) {
     const url = request.nextUrl.clone()
