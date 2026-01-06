@@ -283,13 +283,13 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
         isOpen={isTestDriveOpen}
         onClose={() => setIsTestDriveOpen(false)}
         type="test-drive"
-        carDetails={{ make: car.make, model: car.model, year: car.year }}
+        carDetails={{ make: car.make, model: car.model, year: car.year, id: car.id }}
       />
       <EnquiryPopup
         isOpen={isEnquiryOpen}
         onClose={() => setIsEnquiryOpen(false)}
         type="enquiry"
-        carDetails={{ make: car.make, model: car.model, year: car.year }}
+        carDetails={{ make: car.make, model: car.model, year: car.year, id: car.id }}
       />
     </div>
   )

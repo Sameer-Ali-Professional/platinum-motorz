@@ -14,6 +14,7 @@ interface EnquiryPopupProps {
     make: string
     model: string
     year: number
+    id?: string
   }
 }
 
@@ -50,6 +51,7 @@ export function EnquiryPopup({ isOpen, onClose, type, carDetails }: EnquiryPopup
           message: formData.message,
           subject,
           type,
+          carId: carDetails?.id || null,
           carDetails: carDetails
             ? {
                 year: carDetails.year,
