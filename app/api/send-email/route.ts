@@ -48,10 +48,10 @@ export async function POST(request: NextRequest) {
 
     // Send email
     // Note: Resend test mode only allows sending to account owner's email
-    // To send to paviliomotorsofficial@gmail.com, verify a domain at resend.com/domains
+    // To send to platinummotorz1@outlook.com, verify a domain at resend.com/domains
     const { data, error } = await resend.emails.send({
       from: "onboarding@resend.dev",
-      to: ["sameeraliprofessional1@gmail.com"], // Account owner email (required for test mode)
+      to: ["platinummotorz1@outlook.com"],
       subject: emailSubject,
       html: emailContent,
       replyTo: email,
