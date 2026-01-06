@@ -274,12 +274,9 @@ export async function POST(request: NextRequest) {
     `
 
     // Send email
-    // Note: Resend in testing mode only allows sending to verified email addresses
-    // Sending to account owner's email first, then trying Outlook address
-    // If Outlook fails, the account owner can forward the email
     const { data, error } = await resend.emails.send({
       from: "onboarding@resend.dev",
-      to: ["sameeraliprofessional1@gmail.com", "platinummotorz1@outlook.com"],
+      to: ["platinummotorz1@outlook.com"],
       subject: emailSubject,
       html: emailContent,
       replyTo: email,
