@@ -118,12 +118,21 @@ export default function ContactPage() {
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Clock className="w-6 h-6 text-primary" />
                   </div>
-                  <div>
-                    <h3 className="text-white font-semibold mb-2">Opening Hours</h3>
-                    <div className="space-y-1 text-gray-400">
-                      <p>Monday - Friday: 9:00 AM - 5:30 PM</p>
-                      <p>Saturday: 9:00 AM - 5:00 PM</p>
-                      <p>Sunday: 11:00 AM - 4:00 PM</p>
+                  <div className="w-full">
+                    <h3 className="text-white font-semibold mb-3">Opening Hours</h3>
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-300 font-medium">Monday - Friday</span>
+                        <span className="text-gray-400">9:00 AM - 5:30 PM</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-300 font-medium">Saturday</span>
+                        <span className="text-gray-400">9:00 AM - 5:00 PM</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-300 font-medium">Sunday</span>
+                        <span className="text-gray-400">11:00 AM - 4:00 PM</span>
+                      </div>
                     </div>
                   </div>
                 </div>
