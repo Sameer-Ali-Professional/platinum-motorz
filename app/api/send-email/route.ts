@@ -1,16 +1,25 @@
-import { Resend } from "resend"
+import nodemailer from "nodemailer"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Create transporter using Outlook SMTP
+const transporter = nodemailer.createTransport({
+  host: "smtp-mail.outlook.com",
+  port: 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_EMAIL || "platinummotorz1@outlook.com",
+    pass: process.env.SMTP_PASSWORD, // App password from Outlook
+  },
+})
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if Resend API key is configured
-    if (!process.env.RESEND_API_KEY) {
-      console.error("RESEND_API_KEY is not configured")
+    // Check if SMTP credentials are configured
+    if (!process.env.SMTP_PASSWORD) {
+      console.error("SMTP_PASSWORD is not configured")
       return NextResponse.json(
-        { error: "Email service is not configured. Please set RESEND_API_KEY environment variable." },
+        { error: "Email service is not configured. Please set SMTP_PASSWORD environment variable." },
         { status: 500 }
       )
     }
@@ -273,30 +282,20 @@ export async function POST(request: NextRequest) {
       </html>
     `
 
-    // Send email
-    // Note: Resend requires domain verification to send to non-account-owner emails
-    // For now, sending to verified email. To send directly to Outlook:
-    // 1. Verify domain at https://resend.com/domains
-    // 2. Change 'from' address to use your domain (e.g., noreply@platinummotorz.co.uk)
-    const { data, error } = await resend.emails.send({
-      from: "onboarding@resend.dev",
-      to: ["sameeraliprofessional1@gmail.com"],
+    // Send email using Nodemailer
+    const smtpEmail = process.env.SMTP_EMAIL || "platinummotorz1@outlook.com"
+    const recipientEmail = process.env.RECIPIENT_EMAIL || "platinummotorz1@outlook.com"
+
+    const info = await transporter.sendMail({
+      from: `"Platinum Motorz" <${smtpEmail}>`,
+      to: recipientEmail,
       subject: emailSubject,
       html: emailContent,
       replyTo: email,
-      // Add BCC to Outlook so they also receive it
-      bcc: ["platinummotorz1@outlook.com"],
     })
 
-    if (error) {
-      console.error("Resend error:", JSON.stringify(error, null, 2))
-      return NextResponse.json(
-        { error: "Failed to send email", details: error.message || String(error) },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ success: true, data })
+    console.log("Email sent successfully:", info.messageId)
+    return NextResponse.json({ success: true, messageId: info.messageId })
   } catch (error) {
     console.error("Email API error:", error)
     const errorMessage = error instanceof Error ? error.message : String(error)
