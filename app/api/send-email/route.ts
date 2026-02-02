@@ -1,31 +1,21 @@
-import nodemailer from "nodemailer"
+import sgMail from "@sendgrid/mail"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if SMTP credentials are configured
-    const smtpEmail = process.env.SMTP_EMAIL || "platinummotorz1@outlook.com"
-    const smtpPassword = process.env.SMTP_PASSWORD
-
-    if (!smtpPassword) {
-      console.error("SMTP_PASSWORD is not configured")
+    // Check if SendGrid API key is configured
+    const sendGridApiKey = process.env.SENDGRID_API_KEY
+    if (!sendGridApiKey) {
+      console.error("SENDGRID_API_KEY is not configured")
       return NextResponse.json(
-        { error: "Email service is not configured. Please set SMTP_PASSWORD environment variable." },
+        { error: "Email service is not configured. Please set SENDGRID_API_KEY environment variable." },
         { status: 500 }
       )
     }
 
-    // Create transporter inside the function to ensure env vars are available
-    const transporter = nodemailer.createTransport({
-      host: "smtp-mail.outlook.com",
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: smtpEmail,
-        pass: smtpPassword,
-      },
-    })
+    // Initialize SendGrid
+    sgMail.setApiKey(sendGridApiKey)
 
     const body = await request.json()
     const { name, email, phone, message, subject, type, carDetails, carId } = body
@@ -60,6 +50,7 @@ export async function POST(request: NextRequest) {
 
     // Build email content with car listing
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.platinummotorz.co.uk"
+    const recipientEmail = process.env.RECIPIENT_EMAIL || "platinummotorz1@outlook.com"
 
     let emailContent = `
       <!DOCTYPE html>
@@ -285,46 +276,32 @@ export async function POST(request: NextRequest) {
       </html>
     `
 
-    // Send email using Nodemailer
-    const recipientEmail = process.env.RECIPIENT_EMAIL || smtpEmail
-
-    // Verify transporter connection first
-    try {
-      await transporter.verify()
-      console.log("SMTP server is ready to send emails")
-    } catch (verifyError) {
-      console.error("SMTP verification failed:", verifyError)
-      const verifyErrorMessage = verifyError instanceof Error ? verifyError.message : String(verifyError)
-      return NextResponse.json(
-        { error: "SMTP connection failed", details: verifyErrorMessage },
-        { status: 500 }
-      )
-    }
-
-    const info = await transporter.sendMail({
-      from: `"Platinum Motorz" <${smtpEmail}>`,
+    // Send email using SendGrid
+    const msg = {
       to: recipientEmail,
+      from: process.env.SENDGRID_FROM_EMAIL || "platinummotorz1@outlook.com", // This needs to be a verified sender in SendGrid
       subject: emailSubject,
       html: emailContent,
       replyTo: email,
-    })
+    }
 
-    console.log("Email sent successfully:", info.messageId)
-    return NextResponse.json({ success: true, messageId: info.messageId })
+    await sgMail.send(msg)
+
+    console.log("Email sent successfully via SendGrid")
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Email API error:", error)
     const errorMessage = error instanceof Error ? error.message : String(error)
-    const errorStack = error instanceof Error ? error.stack : undefined
     
     // Log full error details for debugging
-    console.error("Full error details:", {
-      message: errorMessage,
-      stack: errorStack,
-      env: {
-        hasSmtpEmail: !!process.env.SMTP_EMAIL,
-        hasSmtpPassword: !!process.env.SMTP_PASSWORD,
-      },
-    })
+    if (error instanceof Error && "response" in error) {
+      const sgError = error as any
+      console.error("SendGrid error details:", {
+        message: errorMessage,
+        statusCode: sgError.response?.statusCode,
+        body: sgError.response?.body,
+      })
+    }
     
     return NextResponse.json(
       { error: "Internal server error", details: errorMessage },
@@ -332,4 +309,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
