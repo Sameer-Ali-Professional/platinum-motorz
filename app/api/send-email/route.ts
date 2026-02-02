@@ -2,27 +2,30 @@ import nodemailer from "nodemailer"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-// Create transporter using Outlook SMTP
-const transporter = nodemailer.createTransport({
-  host: "smtp-mail.outlook.com",
-  port: 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_EMAIL || "platinummotorz1@outlook.com",
-    pass: process.env.SMTP_PASSWORD, // App password from Outlook
-  },
-})
-
 export async function POST(request: NextRequest) {
   try {
     // Check if SMTP credentials are configured
-    if (!process.env.SMTP_PASSWORD) {
+    const smtpEmail = process.env.SMTP_EMAIL || "platinummotorz1@outlook.com"
+    const smtpPassword = process.env.SMTP_PASSWORD
+
+    if (!smtpPassword) {
       console.error("SMTP_PASSWORD is not configured")
       return NextResponse.json(
         { error: "Email service is not configured. Please set SMTP_PASSWORD environment variable." },
         { status: 500 }
       )
     }
+
+    // Create transporter inside the function to ensure env vars are available
+    const transporter = nodemailer.createTransport({
+      host: "smtp-mail.outlook.com",
+      port: 587,
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: smtpEmail,
+        pass: smtpPassword,
+      },
+    })
 
     const body = await request.json()
     const { name, email, phone, message, subject, type, carDetails, carId } = body
@@ -283,8 +286,20 @@ export async function POST(request: NextRequest) {
     `
 
     // Send email using Nodemailer
-    const smtpEmail = process.env.SMTP_EMAIL || "platinummotorz1@outlook.com"
-    const recipientEmail = process.env.RECIPIENT_EMAIL || "platinummotorz1@outlook.com"
+    const recipientEmail = process.env.RECIPIENT_EMAIL || smtpEmail
+
+    // Verify transporter connection first
+    try {
+      await transporter.verify()
+      console.log("SMTP server is ready to send emails")
+    } catch (verifyError) {
+      console.error("SMTP verification failed:", verifyError)
+      const verifyErrorMessage = verifyError instanceof Error ? verifyError.message : String(verifyError)
+      return NextResponse.json(
+        { error: "SMTP connection failed", details: verifyErrorMessage },
+        { status: 500 }
+      )
+    }
 
     const info = await transporter.sendMail({
       from: `"Platinum Motorz" <${smtpEmail}>`,
@@ -299,6 +314,18 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Email API error:", error)
     const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
+    // Log full error details for debugging
+    console.error("Full error details:", {
+      message: errorMessage,
+      stack: errorStack,
+      env: {
+        hasSmtpEmail: !!process.env.SMTP_EMAIL,
+        hasSmtpPassword: !!process.env.SMTP_PASSWORD,
+      },
+    })
+    
     return NextResponse.json(
       { error: "Internal server error", details: errorMessage },
       { status: 500 }
